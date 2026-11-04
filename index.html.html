@@ -1,0 +1,1076 @@
+<!DOCTYPE html>
+<html lang="ms">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>SPPPI — Dashboard R&I Pensyarah PKB</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <style>
+    /* ══════════════════════════════════════════
+       PRINT STYLES
+    ══════════════════════════════════════════ */
+    @media print {
+      body { background: white !important; font-size: 12px; }
+      header, nav, .year-selector, .year-banner, .print-bar,
+      .no-print, footer { display: none !important; }
+      main { padding: 0 !important; max-width: 100% !important; }
+      .section { display: none !important; }
+      #print-area { display: block !important; }
+      .print-page { page-break-after: always; padding: 16px 0; }
+      .print-page:last-child { page-break-after: avoid; }
+      .print-header { text-align: center; margin-bottom: 18px; border-bottom: 2px solid #1d4ed8; padding-bottom: 10px; }
+      .print-header h2 { font-size: 16px; font-weight: 800; color: #1e293b; }
+      .print-header p { font-size: 11px; color: #64748b; margin-top: 3px; }
+      .print-kpi-row { display: flex; gap: 10px; margin-bottom: 14px; }
+      .print-kpi-box { flex: 1; border: 1px solid #e2e8f0; border-radius: 8px; padding: 10px; text-align: center; }
+      .print-kpi-box .pv { font-size: 22px; font-weight: 800; color: #1e293b; }
+      .print-kpi-box .pl { font-size: 10px; color: #64748b; margin-top: 2px; }
+      .print-section-title { font-size: 13px; font-weight: 700; color: #1e293b; margin: 14px 0 8px; border-left: 4px solid #1d4ed8; padding-left: 10px; }
+      table { width: 100%; border-collapse: collapse; font-size: 11px; margin-bottom: 12px; }
+      thead th { background: #f0f4f8 !important; padding: 7px 10px; text-align: left; font-weight: 700; color: #475569; border-bottom: 1px solid #cbd5e1; font-size: 10px; text-transform: uppercase; }
+      tbody td { padding: 7px 10px; border-bottom: 1px solid #e2e8f0; }
+      .bp { padding: 2px 7px; border-radius: 10px; font-size: 10px; font-weight: 600; }
+      .bg-green { background: #dcfce7 !important; color: #166534 !important; }
+      .bg-blue { background: #dbeafe !important; color: #1e40af !important; }
+      .bg-orange { background: #ffedd5 !important; color: #9a3412 !important; }
+      .bg-purple { background: #ede9fe !important; color: #5b21b6 !important; }
+      .bg-gold { background: #fef3c7 !important; color: #92400e !important; }
+      .bg-red { background: #fee2e2 !important; color: #991b1b !important; }
+      .print-footer { text-align: center; font-size: 10px; color: #94a3b8; border-top: 1px solid #e2e8f0; padding-top: 8px; margin-top: 16px; }
+      .print-summary-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 14px; }
+      .print-summary-box { border: 1px solid #e2e8f0; border-radius: 8px; padding: 10px 14px; }
+      .print-summary-box .ps-label { font-size: 10px; color: #64748b; }
+      .print-summary-box .ps-val { font-size: 16px; font-weight: 800; color: #1e293b; }
+    }
+    @media screen {
+      #print-area { display: none; }
+    }
+  </style>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #f0f4f8;
+      --surface: #ffffff;
+      --border: #e2e8f0;
+      --text: #1e293b;
+      --muted: #64748b;
+      --accent: #1d4ed8;
+      --accent2: #7c3aed;
+      --green: #16a34a;
+      --orange: #ea580c;
+      --red: #dc2626;
+      --gold: #d97706;
+    }
+
+    body { font-family: -apple-system, "Segoe UI", system-ui, sans-serif; background: var(--bg); color: var(--text); font-size: 14px; line-height: 1.6; }
+
+    /* ── HEADER ── */
+    header { background: linear-gradient(135deg, #1e3a8a 0%, #1d4ed8 60%, #7c3aed 100%); color: white; padding: 18px 32px; display: flex; align-items: center; justify-content: space-between; box-shadow: 0 2px 8px rgba(0,0,0,0.15); flex-wrap: wrap; gap: 12px; }
+    header .logo-area { display: flex; align-items: center; gap: 14px; }
+    header .logo-box { background: rgba(255,255,255,0.2); border-radius: 10px; width: 48px; height: 48px; display: flex; align-items: center; justify-content: center; font-size: 24px; }
+    header h1 { font-size: 19px; font-weight: 700; }
+    header p { font-size: 12px; opacity: 0.85; margin-top: 2px; }
+
+    /* ── YEAR SELECTOR ── */
+    .year-selector { display: flex; gap: 6px; align-items: center; }
+    .year-selector span { font-size: 12px; opacity: 0.8; margin-right: 4px; font-weight: 500; }
+    .year-btn {
+      padding: 7px 20px;
+      border-radius: 20px;
+      border: 2px solid rgba(255,255,255,0.35);
+      background: rgba(255,255,255,0.1);
+      color: white;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .year-btn:hover { background: rgba(255,255,255,0.25); }
+    .year-btn.active { background: white; color: #1d4ed8; border-color: white; }
+
+    /* ── PRINT BAR ── */
+    .print-bar {
+      background: #1e293b;
+      padding: 10px 32px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+    .print-bar .pb-left { display: flex; align-items: center; gap: 10px; color: white; font-size: 13px; font-weight: 600; }
+    .print-bar .pb-left span { opacity: 0.7; font-weight: 400; }
+    .dept-select {
+      padding: 6px 14px;
+      border-radius: 8px;
+      border: 1px solid #475569;
+      background: #334155;
+      color: white;
+      font-size: 13px;
+      cursor: pointer;
+      outline: none;
+    }
+    .dept-select option { background: #1e293b; color: white; }
+    .print-btn {
+      padding: 8px 20px;
+      background: #1d4ed8;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: background 0.2s;
+    }
+    .print-btn:hover { background: #1e40af; }
+    .print-btn-outline {
+      padding: 8px 16px;
+      background: transparent;
+      color: #94a3b8;
+      border: 1px solid #475569;
+      border-radius: 8px;
+      font-size: 13px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .print-btn-outline:hover { color: white; border-color: #94a3b8; }
+
+    /* ── NAV TABS ── */
+    nav { background: var(--surface); border-bottom: 1px solid var(--border); padding: 0 32px; display: flex; overflow-x: auto; }
+    nav button { padding: 13px 20px; border: none; background: transparent; color: var(--muted); font-size: 13px; font-weight: 500; cursor: pointer; border-bottom: 3px solid transparent; transition: all 0.2s; white-space: nowrap; }
+    nav button:hover { color: var(--accent); }
+    nav button.active { color: var(--accent); border-bottom-color: var(--accent); font-weight: 700; }
+
+    /* ── YEAR BANNER ── */
+    .year-banner { background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 10px; padding: 10px 18px; margin-bottom: 20px; font-size: 13px; color: #1e40af; display: flex; align-items: center; gap: 8px; font-weight: 600; }
+
+    main { padding: 24px 32px; max-width: 1400px; margin: 0 auto; }
+    .section { display: none; }
+    .section.active { display: block; }
+
+    /* ── KPI CARDS ── */
+    .kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(185px, 1fr)); gap: 14px; margin-bottom: 24px; }
+    .kpi-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 18px; display: flex; flex-direction: column; gap: 6px; position: relative; overflow: hidden; }
+    .kpi-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 4px; }
+    .kpi-card.blue::before { background: var(--accent); }
+    .kpi-card.purple::before { background: var(--accent2); }
+    .kpi-card.green::before { background: var(--green); }
+    .kpi-card.orange::before { background: var(--orange); }
+    .kpi-card.gold::before { background: var(--gold); }
+    .kpi-card .icon { font-size: 26px; }
+    .kpi-card .value { font-size: 30px; font-weight: 800; color: var(--text); }
+    .kpi-card .label { font-size: 12px; color: var(--muted); font-weight: 500; }
+    .kpi-card .trend { font-size: 11px; font-weight: 600; }
+    .trend-up { color: var(--green); }
+    .trend-down { color: var(--red); }
+
+    /* ── GRIDS ── */
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; margin-bottom: 18px; }
+    .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 18px; margin-bottom: 18px; }
+    @media (max-width: 960px) { .grid-2 { grid-template-columns: 1fr; } .grid-3 { grid-template-columns: 1fr; } }
+
+    /* ── CARD ── */
+    .card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 18px; }
+    .card h3 { font-size: 13px; font-weight: 700; color: var(--text); margin-bottom: 14px; display: flex; align-items: center; gap: 7px; }
+
+    /* ── TABLE ── */
+    .table-wrap { overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    thead th { background: var(--bg); padding: 9px 13px; text-align: left; font-weight: 600; color: var(--muted); border-bottom: 1px solid var(--border); font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; }
+    tbody td { padding: 9px 13px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+    tbody tr:last-child td { border-bottom: none; }
+    tbody tr:hover td { background: #f8fafc; }
+
+    /* ── BADGES ── */
+    .bp { display: inline-block; padding: 3px 9px; border-radius: 20px; font-size: 11px; font-weight: 600; }
+    .bg-green { background: #dcfce7; color: #166534; }
+    .bg-blue { background: #dbeafe; color: #1e40af; }
+    .bg-orange { background: #ffedd5; color: #9a3412; }
+    .bg-purple { background: #ede9fe; color: #5b21b6; }
+    .bg-gold { background: #fef3c7; color: #92400e; }
+    .bg-red { background: #fee2e2; color: #991b1b; }
+
+    /* ── LEADERBOARD ── */
+    .leader-list { list-style: none; }
+    .leader-item { display: flex; align-items: center; gap: 11px; padding: 9px 0; border-bottom: 1px solid var(--border); }
+    .leader-item:last-child { border-bottom: none; }
+    .rank { width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 12px; flex-shrink: 0; }
+    .rank-1 { background: #fef3c7; color: #92400e; }
+    .rank-2 { background: #f1f5f9; color: #475569; }
+    .rank-3 { background: #ffedd5; color: #9a3412; }
+    .rank-n { background: #f0f4f8; color: var(--muted); }
+    .leader-info { flex: 1; }
+    .leader-info .name { font-weight: 600; font-size: 13px; }
+    .leader-info .dept { font-size: 11px; color: var(--muted); }
+    .progress-bar { height: 5px; background: var(--border); border-radius: 3px; overflow: hidden; margin-top: 3px; }
+    .progress-fill { height: 100%; border-radius: 3px; background: linear-gradient(90deg, var(--accent), var(--accent2)); }
+    .leader-score { font-weight: 800; font-size: 15px; color: var(--accent); }
+
+    /* ── MEDAL ── */
+    .medal-grid { display: flex; gap: 10px; margin-bottom: 14px; }
+    .medal-card { flex: 1; text-align: center; padding: 14px; border-radius: 10px; border: 1px solid var(--border); }
+    .medal-card .m-icon { font-size: 24px; }
+    .medal-card .m-count { font-size: 26px; font-weight: 800; margin: 3px 0; }
+    .medal-card .m-label { font-size: 11px; color: var(--muted); }
+    .medal-gold { background: #fffbeb; }
+    .medal-silver { background: #f8fafc; }
+    .medal-bronze { background: #fff7ed; }
+
+    .section-title { font-size: 17px; font-weight: 700; color: var(--text); margin-bottom: 18px; padding-bottom: 10px; border-bottom: 2px solid var(--border); display: flex; align-items: center; gap: 10px; }
+
+    footer { text-align: center; padding: 22px; font-size: 12px; color: var(--muted); border-top: 1px solid var(--border); margin-top: 36px; }
+  </style>
+</head>
+<body>
+
+<!-- HEADER -->
+<header>
+  <div class="logo-area">
+    <div class="logo-box">📊</div>
+    <div>
+      <h1>SPPPI — Dashboard R&amp;I Pensyarah</h1>
+      <p>Sistem Pemantauan Prestasi Penyelidikan, Pembentangan &amp; Inovasi · Politeknik Kota Bharu</p>
+    </div>
+  </div>
+  <div class="year-selector">
+    <span>📅 Tahun:</span>
+    <button class="year-btn active" onclick="setYear(2024, this)">2024</button>
+    <button class="year-btn" onclick="setYear(2025, this)">2025</button>
+    <button class="year-btn" onclick="setYear(2026, this)">2026</button>
+  </div>
+</header>
+
+<!-- PRINT BAR -->
+<div class="print-bar no-print">
+  <div class="pb-left">
+    🖨️ Cetak Laporan
+    <span>Pilih jabatan dan tahun, kemudian klik Cetak</span>
+  </div>
+  <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+    <div style="display:flex; align-items:center; gap:8px;">
+      <label style="color:#94a3b8; font-size:12px; font-weight:500;">Jabatan:</label>
+      <select class="dept-select" id="dept-select">
+        <option value="SEMUA">🏫 Semua Jabatan</option>
+        <option value="JKE">⚡ JKE — Kejuruteraan Elektrik</option>
+        <option value="JKM">⚙️ JKM — Kejuruteraan Mekanikal</option>
+        <option value="JKA">🏗️ JKA — Kejuruteraan Awam</option>
+        <option value="JMSK">💻 JMSK — Matematik, Sains &amp; Komputer</option>
+        <option value="JKK">🔧 JKK — Kejuruteraan Kimia</option>
+        <option value="JPA">📐 JPA — Perdagangan &amp; Akaun</option>
+      </select>
+    </div>
+    <button class="print-btn-outline" onclick="previewPrint()">👁 Pratonton</button>
+    <button class="print-btn" onclick="doPrint()">🖨️ Cetak / PDF</button>
+  </div>
+</div>
+
+<!-- NAV TABS -->
+<nav>
+  <button class="active" onclick="showTab('overview', this)">🏠 Gambaran Keseluruhan</button>
+  <button onclick="showTab('penyelidikan', this)">🔬 Penyelidikan</button>
+  <button onclick="showTab('pembentangan', this)">🎤 Pembentangan</button>
+  <button onclick="showTab('inovasi', this)">💡 Inovasi</button>
+  <button onclick="showTab('leaderboard', this)">🏆 Leaderboard</button>
+  <button onclick="showTab('pensyarah', this)">👨‍🏫 Profil Pensyarah</button>
+</nav>
+
+<main>
+
+  <!-- ══════════════════════════════ TAB 1: OVERVIEW ══════════════════════════════ -->
+  <div id="tab-overview" class="section active">
+    <div class="year-banner" id="banner-overview">📅 Memaparkan data tahun 2024</div>
+    <div class="section-title">🏠 Gambaran Keseluruhan PKB</div>
+    <div class="kpi-grid">
+      <div class="kpi-card blue"><div class="icon">🔬</div><div class="value" id="kpi-penyelidikan">45</div><div class="label">Jumlah Penyelidikan</div><div class="trend" id="kpi-penyelidikan-trend"></div></div>
+      <div class="kpi-card purple"><div class="icon">🎤</div><div class="value" id="kpi-pembentangan">38</div><div class="label">Pembentangan</div><div class="trend" id="kpi-pembentangan-trend"></div></div>
+      <div class="kpi-card green"><div class="icon">💡</div><div class="value" id="kpi-inovasi">22</div><div class="label">Produk Inovasi</div><div class="trend" id="kpi-inovasi-trend"></div></div>
+      <div class="kpi-card orange"><div class="icon">🏅</div><div class="value" id="kpi-anugerah">31</div><div class="label">Anugerah / Pingat</div><div class="trend" id="kpi-anugerah-trend"></div></div>
+      <div class="kpi-card gold"><div class="icon">👨‍🏫</div><div class="value" id="kpi-pensyarah">67</div><div class="label">Pensyarah Terlibat</div><div class="trend" id="kpi-pensyarah-trend"></div></div>
+    </div>
+    <div class="grid-2">
+      <div class="card"><h3>📈 Trend R&amp;I 3 Tahun (2024–2026)</h3><canvas id="trendChart" height="200"></canvas></div>
+      <div class="card"><h3>🏫 Agihan Penyelidikan Mengikut Jabatan</h3><canvas id="jabatanChart" height="200"></canvas></div>
+    </div>
+    <div class="grid-3">
+      <div class="card"><h3>🔬 Status Penyelidikan</h3><canvas id="statusChart" height="180"></canvas></div>
+      <div class="card"><h3>🌍 Pembentangan — Dalam/Luar Negara</h3><canvas id="bentangChart" height="180"></canvas></div>
+      <div class="card">
+        <h3>🏅 Pingat Inovasi</h3>
+        <div class="medal-grid">
+          <div class="medal-card medal-gold"><div class="m-icon">🥇</div><div class="m-count" id="medal-emas" style="color:#d97706;">8</div><div class="m-label">Emas</div></div>
+          <div class="medal-card medal-silver"><div class="m-icon">🥈</div><div class="m-count" id="medal-perak" style="color:#64748b;">14</div><div class="m-label">Perak</div></div>
+          <div class="medal-card medal-bronze"><div class="m-icon">🥉</div><div class="m-count" id="medal-gangsa" style="color:#ea580c;">9</div><div class="m-label">Gangsa</div></div>
+        </div>
+        <canvas id="medalChart" height="100"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════ TAB 2: PENYELIDIKAN ══════════════════════════════ -->
+  <div id="tab-penyelidikan" class="section">
+    <div class="year-banner" id="banner-penyelidikan">📅 Memaparkan data tahun 2024</div>
+    <div class="section-title">🔬 Modul Penyelidikan</div>
+    <div class="kpi-grid">
+      <div class="kpi-card blue"><div class="icon">📋</div><div class="value" id="p-jumlah">45</div><div class="label">Jumlah Projek</div></div>
+      <div class="kpi-card green"><div class="icon">✅</div><div class="value" id="p-selesai">28</div><div class="label">Selesai</div></div>
+      <div class="kpi-card orange"><div class="icon">🔄</div><div class="value" id="p-proses">13</div><div class="label">Dalam Proses</div></div>
+      <div class="kpi-card purple"><div class="icon">📝</div><div class="value" id="p-rancang">4</div><div class="label">Perancangan</div></div>
+    </div>
+    <div class="grid-2">
+      <div class="card"><h3>💰 Agihan Mengikut Jenis Geran</h3><canvas id="geranChart" height="220"></canvas></div>
+      <div class="card"><h3>📚 Jumlah Penyelidikan Mengikut Jabatan</h3><canvas id="tahunPenyelidikanChart" height="220"></canvas></div>
+    </div>
+    <div class="card">
+      <h3>📋 Senarai Projek Penyelidikan</h3>
+      <div class="table-wrap"><table>
+        <thead><tr><th>#</th><th>Tajuk Penyelidikan</th><th>Penyelidik Utama</th><th>Jabatan</th><th>Jenis Geran</th><th>Status</th></tr></thead>
+        <tbody id="table-penyelidikan"></tbody>
+      </table></div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════ TAB 3: PEMBENTANGAN ══════════════════════════════ -->
+  <div id="tab-pembentangan" class="section">
+    <div class="year-banner" id="banner-pembentangan">📅 Memaparkan data tahun 2024</div>
+    <div class="section-title">🎤 Modul Pembentangan</div>
+    <div class="kpi-grid">
+      <div class="kpi-card blue"><div class="icon">🎤</div><div class="value" id="b-jumlah">38</div><div class="label">Jumlah Pembentangan</div></div>
+      <div class="kpi-card green"><div class="icon">🇲🇾</div><div class="value" id="b-dalam">24</div><div class="label">Dalam Negara</div></div>
+      <div class="kpi-card purple"><div class="icon">✈️</div><div class="value" id="b-luar">14</div><div class="label">Luar Negara</div></div>
+      <div class="kpi-card orange"><div class="icon">📄</div><div class="value" id="b-prosiding">31</div><div class="label">Prosiding Diterbit</div></div>
+    </div>
+    <div class="grid-2">
+      <div class="card"><h3>📅 Pembentangan Mengikut Jabatan</h3><canvas id="bentangTahunChart" height="220"></canvas></div>
+      <div class="card"><h3>🏛️ Platform Persidangan Utama</h3><canvas id="platformChart" height="220"></canvas></div>
+    </div>
+    <div class="card">
+      <h3>📋 Senarai Pembentangan</h3>
+      <div class="table-wrap"><table>
+        <thead><tr><th>#</th><th>Tajuk Kertas Kerja</th><th>Pembentang</th><th>Persidangan</th><th>Lokasi</th><th>Peringkat</th></tr></thead>
+        <tbody id="table-pembentangan"></tbody>
+      </table></div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════ TAB 4: INOVASI ══════════════════════════════ -->
+  <div id="tab-inovasi" class="section">
+    <div class="year-banner" id="banner-inovasi">📅 Memaparkan data tahun 2024</div>
+    <div class="section-title">💡 Modul Inovasi</div>
+    <div class="kpi-grid">
+      <div class="kpi-card green"><div class="icon">💡</div><div class="value" id="i-jumlah">22</div><div class="label">Jumlah Inovasi</div></div>
+      <div class="kpi-card gold"><div class="icon">🥇</div><div class="value" id="i-emas">8</div><div class="label">Pingat Emas</div></div>
+      <div class="kpi-card blue"><div class="icon">🥈</div><div class="value" id="i-perak">14</div><div class="label">Pingat Perak</div></div>
+      <div class="kpi-card orange"><div class="icon">🥉</div><div class="value" id="i-gangsa">9</div><div class="label">Pingat Gangsa</div></div>
+      <div class="kpi-card purple"><div class="icon">📜</div><div class="value" id="i-ip">6</div><div class="label">IP Didaftar</div></div>
+    </div>
+    <div class="grid-2">
+      <div class="card"><h3>🏆 Inovasi Mengikut Pameran/Pertandingan</h3><canvas id="pameranChart" height="230"></canvas></div>
+      <div class="card"><h3>🗂️ Kategori Inovasi</h3><canvas id="kategoriChart" height="230"></canvas></div>
+    </div>
+    <div class="card">
+      <h3>📋 Senarai Produk Inovasi</h3>
+      <div class="table-wrap"><table>
+        <thead><tr><th>#</th><th>Nama Inovasi</th><th>Ketua Inovator</th><th>Jabatan</th><th>Kategori</th><th>Pameran</th><th>Anugerah</th></tr></thead>
+        <tbody id="table-inovasi"></tbody>
+      </table></div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════ TAB 5: LEADERBOARD ══════════════════════════════ -->
+  <div id="tab-leaderboard" class="section">
+    <div class="year-banner" id="banner-leaderboard">📅 Memaparkan data tahun 2024</div>
+    <div class="section-title">🏆 Leaderboard Pensyarah Aktif R&amp;I</div>
+    <div class="grid-2">
+      <div class="card">
+        <h3>🏆 Ranking KPI R&amp;I Keseluruhan</h3>
+        <ul class="leader-list" id="leaderboard-list"></ul>
+      </div>
+      <div class="card"><h3>📊 Perbandingan KPI Mengikut Jabatan</h3><canvas id="kpiJabatanChart" height="300"></canvas></div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════ TAB 6: PROFIL ══════════════════════════════ -->
+  <div id="tab-pensyarah" class="section">
+    <div class="year-banner" id="banner-pensyarah">📅 Memaparkan data tahun 2024</div>
+    <div class="section-title">👨‍🏫 Profil Pensyarah</div>
+    <div class="grid-3" style="margin-bottom:18px;">
+      <div class="card" style="text-align:center; padding:26px;">
+        <div style="font-size:52px; margin-bottom:8px;">👨‍💼</div>
+        <div style="font-weight:700; font-size:15px;">Dr. Ahmad Fadzil bin Osman</div>
+        <div style="color:var(--muted); font-size:13px; margin:4px 0;">Pensyarah Kanan</div>
+        <div style="margin-top:8px;"><span class="bp bg-blue">JKE</span></div>
+        <div style="margin-top:10px; font-size:12px; color:var(--muted);">ahmad.fadzil@pkb.edu.my</div>
+      </div>
+      <div class="card"><h3>📊 Pencapaian R&amp;I</h3><canvas id="radarChart" height="220"></canvas></div>
+      <div class="card">
+        <h3>🏅 Ringkasan Aktiviti</h3>
+        <table><tbody id="profil-summary"></tbody></table>
+      </div>
+    </div>
+    <div class="card">
+      <h3>📋 Senarai Semua Pensyarah PKB</h3>
+      <div class="table-wrap"><table>
+        <thead><tr><th>Nama</th><th>Jawatan</th><th>Jabatan</th><th>Penyelidikan</th><th>Pembentangan</th><th>Inovasi</th><th>Skor KPI</th></tr></thead>
+        <tbody id="table-pensyarah"></tbody>
+      </table></div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════ PRINT AREA (hidden on screen) ══════════════════════════════ -->
+  <div id="print-area"></div>
+
+</main>
+
+<footer>
+  <p>© 2024–2026 Politeknik Kota Bharu · SPPPI — Sistem Pemantauan Prestasi Penyelidikan, Pembentangan &amp; Inovasi</p>
+  <p style="margin-top:6px; border-top:1px solid var(--border); padding-top:8px; color:#aaa;">Made with IBM Bob</p>
+</footer>
+
+<script>
+// ══════════════════════════════════════════════════════════
+//  DATA STORE — 3 TAHUN
+// ══════════════════════════════════════════════════════════
+const DATA = {
+  2024: {
+    kpi: { penyelidikan:45, pembentangan:38, inovasi:22, anugerah:31, pensyarah:67 },
+    kpiTrend: { penyelidikan:'▲ 12% dari 2023', pembentangan:'▲ 8% dari 2023', inovasi:'▲ 15% dari 2023', anugerah:'▲ 5% dari 2023', pensyarah:'▲ 3% dari 2023' },
+    kpiTrendUp: { penyelidikan:true, pembentangan:true, inovasi:true, anugerah:true, pensyarah:true },
+    medalEmas:8, medalPerak:14, medalGangsa:9,
+    status: [28,13,4],
+    bentangDalamLuar: [24,14],
+    jabatan: { labels:['JKE','JKM','JKA','JMSK','JKK','JPA'], data:[12,10,9,7,4,3] },
+    geran: [15,10,16,4],
+    bentangJabatan: { JKE:[10,8,7,10,9], JKM:[9,7,6,8,7], JKA:[7,6,5,7,6], JMSK:[5,4,4,5,5] },
+    platform: [9,7,5,4,6,7],
+    pameranMedal: { emas:[3,2,1,1,1], perak:[2,3,3,2,4], gangsa:[1,2,2,1,3] },
+    kategori: [10,5,4,3],
+    kpiRadar: { JKE:[90,85,80,88,70], JKM:[80,78,75,70,60], JKA:[75,70,65,72,55], JMSK:[65,65,55,58,45] },
+    radarProfil: [95,90,85,95,80,88],
+    iKPI: { penyelidikan:28, pembentangan:24, inovasi:13, ip:6 },
+    bKPI: { jumlah:38, dalam:24, luar:14, prosiding:31 },
+    pKPI: { jumlah:45, selesai:28, proses:13, rancang:4 },
+    leaders: [
+      { name:'Dr. Ahmad Fadzil bin Osman', dept:'JKE', score:95 },
+      { name:'Pn. Siti Hajar binti Mohd Noor', dept:'JKM', score:88 },
+      { name:'Tn. Hj. Roslan bin Abdullah', dept:'JKE', score:82 },
+      { name:'Dr. Mazlan bin Ismail', dept:'JKA', score:76 },
+      { name:'En. Khairul Azmi bin Hashim', dept:'JKM', score:71 },
+      { name:'En. Hafizi bin Ramli', dept:'JKA', score:66 },
+      { name:'Pn. Noor Ain binti Zakaria', dept:'JMSK', score:60 },
+      { name:'Pn. Rahimah binti Che Mat', dept:'JMSK', score:53 },
+    ],
+    tablePenyelidikan: [
+      [1,'Pembangunan Sistem Pengurusan Ladang Pintar Berasaskan IoT','Dr. Ahmad Fadzil','JKE','FRGS','Selesai'],
+      [2,'Analisis Penggunaan Tenaga Solar Panel di PKB','Tn. Hj. Roslan','JKE','PRGS','Dalam Proses'],
+      [3,'Aplikasi Augmented Reality dalam Pembelajaran Teknikal','Pn. Siti Hajar','JKM','Dalaman','Selesai'],
+      [4,'Sistem Pengesanan Kehadiran Pelajar Menggunakan RFID','En. Khairul Azmi','JKM','Dalaman','Selesai'],
+      [5,'Keberkesanan Kaedah PBL dalam Kursus Teknologi Maklumat','Pn. Noor Ain','JMSK','FRGS','Dalam Proses'],
+      [6,'Rekabentuk Sistem Pengairan Automatik Berkos Rendah','En. Hafizi Ramli','JKA','Dalaman','Selesai'],
+      [7,'Kajian Kualiti Air Sungai Menggunakan Sensor IoT','Dr. Mazlan Ismail','JKA','PRGS','Selesai'],
+      [8,'Pembangunan Modul E-Learning Interaktif untuk Pelajar OKU','Pn. Rahimah','JMSK','FRGS','Perancangan'],
+    ],
+    tablePembentangan: [
+      [1,'IoT-Based Smart Classroom Monitoring System','Dr. Ahmad Fadzil','ICTC 2024','Kuala Lumpur','Kebangsaan'],
+      [2,'Augmented Reality in Technical Education','Pn. Siti Hajar','ICEE 2024','Tokyo, Japan','Antarabangsa'],
+      [3,'Energy Efficiency Analysis of Solar Panels','Tn. Hj. Roslan','ICSET 2024','Singapore','Antarabangsa'],
+      [4,'RFID Attendance System for Polytechnic Students','En. Khairul Azmi','NAPREC 2024','Selangor','Kebangsaan'],
+      [5,'PBL Method Effectiveness in IT Courses','Pn. Noor Ain','CITE 2024','Johor Bahru','Kebangsaan'],
+      [6,'Low-Cost Automated Irrigation System Design','En. Hafizi Ramli','APCEE 2024','Bangkok, Thailand','Antarabangsa'],
+      [7,'River Water Quality Monitoring with IoT Sensors','Dr. Mazlan Ismail','ICEEM 2024','Kuching','Kebangsaan'],
+    ],
+    tableInovasi: [
+      [1,'SmartFarm IoT Monitoring System','Dr. Ahmad Fadzil','JKE','Produk','CITREX 2024','🥇 Emas'],
+      [2,'AR-Tech Learning Module','Pn. Siti Hajar','JKM','Perkhidmatan','MTE 2024','🥇 Emas'],
+      [3,'Auto Solar Panel Tracker','Tn. Hj. Roslan','JKE','Produk','ITEX 2024','🥈 Perak'],
+      [4,'EcoWater Irrigation System','En. Hafizi Ramli','JKA','Proses','NAPREC 2024','🥇 Emas'],
+      [5,'Smart Attendance with RFID & AI','En. Khairul Azmi','JKM','Produk','CITREX 2024','🥉 Gangsa'],
+      [6,'IoT Water Quality Sentinel','Dr. Mazlan Ismail','JKA','Produk','MTE 2024','🥈 Perak'],
+      [7,'E-Learn Inclusif Platform OKU','Pn. Rahimah','JMSK','Perkhidmatan','NAPREC 2024','🥈 Perak'],
+    ],
+    tablePensyarah: [
+      ['Dr. Ahmad Fadzil bin Osman','Pensyarah Kanan','JKE',5,6,3,95],
+      ['Pn. Siti Hajar binti Mohd Noor','Pensyarah Kanan','JKM',4,5,3,88],
+      ['Tn. Hj. Roslan bin Abdullah','Pensyarah Kanan','JKE',4,4,2,82],
+      ['Dr. Mazlan bin Ismail','Pensyarah Kanan','JKA',3,4,2,76],
+      ['En. Khairul Azmi bin Hashim','Pensyarah','JKM',3,3,2,71],
+      ['En. Hafizi bin Ramli','Pensyarah','JKA',3,3,1,66],
+      ['Pn. Noor Ain binti Zakaria','Pensyarah','JMSK',2,3,1,60],
+      ['Pn. Rahimah binti Che Mat','Pensyarah','JMSK',2,2,1,53],
+    ],
+    profilSummary: [['Penyelidikan','5 projek'],['Pembentangan','6 kertas'],['Inovasi','3 produk'],['Anugerah','🥇×2 🥈×1'],['IP Didaftar','2 IP'],['Skor KPI','95 / 100']],
+  },
+
+  2025: {
+    kpi: { penyelidikan:52, pembentangan:45, inovasi:27, anugerah:38, pensyarah:72 },
+    kpiTrend: { penyelidikan:'▲ 16% dari 2024', pembentangan:'▲ 18% dari 2024', inovasi:'▲ 23% dari 2024', anugerah:'▲ 23% dari 2024', pensyarah:'▲ 7% dari 2024' },
+    kpiTrendUp: { penyelidikan:true, pembentangan:true, inovasi:true, anugerah:true, pensyarah:true },
+    medalEmas:11, medalPerak:17, medalGangsa:10,
+    status: [33,15,4],
+    bentangDalamLuar: [27,18],
+    jabatan: { labels:['JKE','JKM','JKA','JMSK','JKK','JPA'], data:[15,13,11,8,3,2] },
+    geran: [18,12,18,4],
+    bentangJabatan: { JKE:[12,10,8,12,11], JKM:[11,9,7,10,9], JKA:[9,7,6,9,8], JMSK:[6,5,5,6,6] },
+    platform: [11,9,7,5,7,6],
+    pameranMedal: { emas:[4,3,2,1,1], perak:[3,4,3,3,4], gangsa:[1,2,2,2,3] },
+    kategori: [12,7,5,3],
+    kpiRadar: { JKE:[93,88,84,90,75], JKM:[84,82,78,75,65], JKA:[79,74,69,76,60], JMSK:[70,68,60,62,50] },
+    radarProfil: [97,93,88,97,85,91],
+    iKPI: { penyelidikan:33, pembentangan:27, inovasi:16, ip:8 },
+    bKPI: { jumlah:45, dalam:27, luar:18, prosiding:38 },
+    pKPI: { jumlah:52, selesai:33, proses:15, rancang:4 },
+    leaders: [
+      { name:'Dr. Ahmad Fadzil bin Osman', dept:'JKE', score:97 },
+      { name:'Pn. Siti Hajar binti Mohd Noor', dept:'JKM', score:91 },
+      { name:'Tn. Hj. Roslan bin Abdullah', dept:'JKE', score:85 },
+      { name:'Dr. Mazlan bin Ismail', dept:'JKA', score:80 },
+      { name:'En. Khairul Azmi bin Hashim', dept:'JKM', score:74 },
+      { name:'En. Hafizi bin Ramli', dept:'JKA', score:70 },
+      { name:'Pn. Noor Ain binti Zakaria', dept:'JMSK', score:65 },
+      { name:'Pn. Rahimah binti Che Mat', dept:'JMSK', score:58 },
+    ],
+    tablePenyelidikan: [
+      [1,'Sistem Pemantauan Kualiti Udara Dalaman Berasaskan IoT','Dr. Ahmad Fadzil','JKE','FRGS','Selesai'],
+      [2,'Pembangunan Panel Solar Fleksibel untuk Bangunan','Tn. Hj. Roslan','JKE','PRGS','Selesai'],
+      [3,'Gamifikasi dalam Pembelajaran Kejuruteraan','Pn. Siti Hajar','JKM','Dalaman','Selesai'],
+      [4,'Sistem Pengesahan Biometrik untuk Keselamatan Makmal','En. Khairul Azmi','JKM','Dalaman','Dalam Proses'],
+      [5,'Kesan Penggunaan Chatbot AI dalam Pengajaran','Pn. Noor Ain','JMSK','FRGS','Dalam Proses'],
+      [6,'Robot Pengesan Paras Air Banjir Automatik','En. Hafizi Ramli','JKA','PRGS','Selesai'],
+      [7,'Pemantauan Getaran Struktur Bangunan dengan IoT','Dr. Mazlan Ismail','JKA','FRGS','Dalam Proses'],
+      [8,'Platform Pembelajaran Adaptif untuk Pelajar Lemah','Pn. Rahimah','JMSK','Dalaman','Selesai'],
+      [9,'Analisis Big Data Prestasi Pelajar Politeknik','Dr. Ahmad Fadzil','JKE','PRGS','Perancangan'],
+    ],
+    tablePembentangan: [
+      [1,'IoT Air Quality Monitoring in Smart Buildings','Dr. Ahmad Fadzil','ICTC 2025','Putrajaya','Kebangsaan'],
+      [2,'Gamification Effectiveness in Engineering Education','Pn. Siti Hajar','ICEE 2025','Seoul, Korea','Antarabangsa'],
+      [3,'Flexible Solar Panel Integration in Architecture','Tn. Hj. Roslan','ICSET 2025','Dubai, UAE','Antarabangsa'],
+      [4,'Biometric Security for Laboratory Management','En. Khairul Azmi','NAPREC 2025','Perak','Kebangsaan'],
+      [5,'AI Chatbot in Higher Technical Education','Pn. Noor Ain','CITE 2025','Melaka','Kebangsaan'],
+      [6,'Flood Detection Robot Using IoT Sensors','En. Hafizi Ramli','APCEE 2025','Jakarta, Indonesia','Antarabangsa'],
+      [7,'Structural Vibration Monitoring via IoT','Dr. Mazlan Ismail','ICEEM 2025','Penang','Kebangsaan'],
+      [8,'Adaptive Learning Platform for Weak Students','Pn. Rahimah','CITE 2025','Melaka','Kebangsaan'],
+    ],
+    tableInovasi: [
+      [1,'AirSense IoT Indoor Air Monitor','Dr. Ahmad Fadzil','JKE','Produk','CITREX 2025','🥇 Emas'],
+      [2,'GameLearn Engineering Module','Pn. Siti Hajar','JKM','Perkhidmatan','MTE 2025','🥇 Emas'],
+      [3,'FlexSolar Building Panel','Tn. Hj. Roslan','JKE','Produk','ITEX 2025','🥇 Emas'],
+      [4,'FloodBot Autonomous Detector','En. Hafizi Ramli','JKA','Produk','NAPREC 2025','🥈 Perak'],
+      [5,'BioLab Security System','En. Khairul Azmi','JKM','Produk','CITREX 2025','🥈 Perak'],
+      [6,'VibeSafe Structure Monitor','Dr. Mazlan Ismail','JKA','Proses','MTE 2025','🥉 Gangsa'],
+      [7,'AdaptLearn Smart Platform','Pn. Rahimah','JMSK','Perkhidmatan','NAPREC 2025','🥈 Perak'],
+      [8,'ChatEdu AI Assistant','Pn. Noor Ain','JMSK','Perkhidmatan','CITREX 2025','🥉 Gangsa'],
+    ],
+    tablePensyarah: [
+      ['Dr. Ahmad Fadzil bin Osman','Pensyarah Kanan','JKE',6,7,4,97],
+      ['Pn. Siti Hajar binti Mohd Noor','Pensyarah Kanan','JKM',5,6,3,91],
+      ['Tn. Hj. Roslan bin Abdullah','Pensyarah Kanan','JKE',5,5,3,85],
+      ['Dr. Mazlan bin Ismail','Pensyarah Kanan','JKA',4,5,2,80],
+      ['En. Khairul Azmi bin Hashim','Pensyarah','JKM',4,4,2,74],
+      ['En. Hafizi bin Ramli','Pensyarah','JKA',4,4,2,70],
+      ['Pn. Noor Ain binti Zakaria','Pensyarah','JMSK',3,4,2,65],
+      ['Pn. Rahimah binti Che Mat','Pensyarah','JMSK',3,3,2,58],
+    ],
+    profilSummary: [['Penyelidikan','6 projek'],['Pembentangan','7 kertas'],['Inovasi','4 produk'],['Anugerah','🥇×3 🥈×1'],['IP Didaftar','3 IP'],['Skor KPI','97 / 100']],
+  },
+
+  2026: {
+    kpi: { penyelidikan:60, pembentangan:54, inovasi:33, anugerah:46, pensyarah:78 },
+    kpiTrend: { penyelidikan:'▲ 15% dari 2025', pembentangan:'▲ 20% dari 2025', inovasi:'▲ 22% dari 2025', anugerah:'▲ 21% dari 2025', pensyarah:'▲ 8% dari 2025' },
+    kpiTrendUp: { penyelidikan:true, pembentangan:true, inovasi:true, anugerah:true, pensyarah:true },
+    medalEmas:14, medalPerak:20, medalGangsa:12,
+    status: [39,17,4],
+    bentangDalamLuar: [32,22],
+    jabatan: { labels:['JKE','JKM','JKA','JMSK','JKK','JPA'], data:[18,15,13,10,2,2] },
+    geran: [22,14,20,4],
+    bentangJabatan: { JKE:[14,12,10,15,13], JKM:[13,11,9,12,11], JKA:[11,9,8,11,10], JMSK:[8,6,6,8,7] },
+    platform: [13,11,9,7,8,6],
+    pameranMedal: { emas:[5,4,2,2,1], perak:[4,5,4,3,4], gangsa:[2,3,2,2,3] },
+    kategori: [15,8,7,3],
+    kpiRadar: { JKE:[96,91,87,93,80], JKM:[88,85,82,79,70], JKA:[83,78,74,80,65], JMSK:[74,72,65,67,55] },
+    radarProfil: [99,96,92,99,90,95],
+    iKPI: { penyelidikan:39, pembentangan:32, inovasi:19, ip:10 },
+    bKPI: { jumlah:54, dalam:32, luar:22, prosiding:47 },
+    pKPI: { jumlah:60, selesai:39, proses:17, rancang:4 },
+    leaders: [
+      { name:'Dr. Ahmad Fadzil bin Osman', dept:'JKE', score:99 },
+      { name:'Pn. Siti Hajar binti Mohd Noor', dept:'JKM', score:94 },
+      { name:'Tn. Hj. Roslan bin Abdullah', dept:'JKE', score:89 },
+      { name:'Dr. Mazlan bin Ismail', dept:'JKA', score:84 },
+      { name:'En. Khairul Azmi bin Hashim', dept:'JKM', score:78 },
+      { name:'En. Hafizi bin Ramli', dept:'JKA', score:74 },
+      { name:'Pn. Noor Ain binti Zakaria', dept:'JMSK', score:69 },
+      { name:'Pn. Rahimah binti Che Mat', dept:'JMSK', score:63 },
+    ],
+    tablePenyelidikan: [
+      [1,'Pembangunan Sistem Rumah Pintar Bersepadu Berasaskan AI & IoT','Dr. Ahmad Fadzil','JKE','FRGS','Dalam Proses'],
+      [2,'Penjanaan Tenaga Hibrid Solar-Angin Skala Kecil','Tn. Hj. Roslan','JKE','PRGS','Selesai'],
+      [3,'Metaverse dalam Latihan Kemahiran Kejuruteraan','Pn. Siti Hajar','JKM','FRGS','Dalam Proses'],
+      [4,'Sistem Pengecaman Wajah untuk Kawalan Kehadiran','En. Khairul Azmi','JKM','Dalaman','Selesai'],
+      [5,'Analitik Pembelajaran Berasaskan AI untuk Politeknik','Pn. Noor Ain','JMSK','PRGS','Dalam Proses'],
+      [6,'Sistem Pemantauan Kualiti Tanah Pertanian Pintar','En. Hafizi Ramli','JKA','FRGS','Selesai'],
+      [7,'Pengesan Retakan Infrastruktur Menggunakan Drone & AI','Dr. Mazlan Ismail','JKA','PRGS','Dalam Proses'],
+      [8,'Persekitaran Pembelajaran Maya untuk Kemahiran Teknikal','Pn. Rahimah','JMSK','Dalaman','Selesai'],
+      [9,'Sistem Kawalan Kualiti Pembuatan Berasaskan Machine Learning','Dr. Ahmad Fadzil','JKE','FRGS','Perancangan'],
+      [10,'Platform IoT untuk Pemantauan Kampus Pintar','En. Khairul Azmi','JKM','Dalaman','Perancangan'],
+    ],
+    tablePembentangan: [
+      [1,'AI-IoT Integrated Smart Home System','Dr. Ahmad Fadzil','ICTC 2026','Cyberjaya','Kebangsaan'],
+      [2,'Metaverse Applications in Engineering Skills Training','Pn. Siti Hajar','ICEE 2026','London, UK','Antarabangsa'],
+      [3,'Hybrid Solar-Wind Energy Generation for Polytechnic','Tn. Hj. Roslan','ICSET 2026','Istanbul, Turkey','Antarabangsa'],
+      [4,'Face Recognition for Smart Attendance System','En. Khairul Azmi','NAPREC 2026','Kedah','Kebangsaan'],
+      [5,'AI-Driven Learning Analytics in Polytechnic Education','Pn. Noor Ain','CITE 2026','Negeri Sembilan','Kebangsaan'],
+      [6,'Smart Soil Quality Monitoring for Precision Farming','En. Hafizi Ramli','APCEE 2026','Hanoi, Vietnam','Antarabangsa'],
+      [7,'Drone-AI Infrastructure Crack Detection','Dr. Mazlan Ismail','ICEEM 2026','Terengganu','Kebangsaan'],
+      [8,'Virtual Learning Environment for Technical Skills','Pn. Rahimah','CITE 2026','Negeri Sembilan','Kebangsaan'],
+      [9,'ML-Based Quality Control in Manufacturing','Dr. Ahmad Fadzil','ICOM 2026','Osaka, Japan','Antarabangsa'],
+    ],
+    tableInovasi: [
+      [1,'SmartHome AI-IoT Controller','Dr. Ahmad Fadzil','JKE','Produk','CITREX 2026','🥇 Emas'],
+      [2,'MetaSkills VR Training Suite','Pn. Siti Hajar','JKM','Perkhidmatan','MTE 2026','🥇 Emas'],
+      [3,'HybridGen Solar-Wind Unit','Tn. Hj. Roslan','JKE','Produk','ITEX 2026','🥇 Emas'],
+      [4,'SoilSmart Precision Farming','En. Hafizi Ramli','JKA','Produk','NAPREC 2026','🥇 Emas'],
+      [5,'FaceAttend Recognition System','En. Khairul Azmi','JKM','Produk','CITREX 2026','🥈 Perak'],
+      [6,'DroneInspect Infrastructure AI','Dr. Mazlan Ismail','JKA','Proses','MTE 2026','🥈 Perak'],
+      [7,'VirtualSkills Learning Platform','Pn. Rahimah','JMSK','Perkhidmatan','NAPREC 2026','🥈 Perak'],
+      [8,'EduAnalytics AI Dashboard','Pn. Noor Ain','JMSK','Perkhidmatan','CITREX 2026','🥉 Gangsa'],
+      [9,'QualityML Manufacturing System','Dr. Ahmad Fadzil','JKE','Proses','ITEX 2026','🥇 Emas'],
+    ],
+    tablePensyarah: [
+      ['Dr. Ahmad Fadzil bin Osman','Pensyarah Kanan','JKE',7,9,5,99],
+      ['Pn. Siti Hajar binti Mohd Noor','Pensyarah Kanan','JKM',6,7,4,94],
+      ['Tn. Hj. Roslan bin Abdullah','Pensyarah Kanan','JKE',6,6,3,89],
+      ['Dr. Mazlan bin Ismail','Pensyarah Kanan','JKA',5,6,3,84],
+      ['En. Khairul Azmi bin Hashim','Pensyarah','JKM',5,5,3,78],
+      ['En. Hafizi bin Ramli','Pensyarah','JKA',5,5,2,74],
+      ['Pn. Noor Ain binti Zakaria','Pensyarah','JMSK',4,5,2,69],
+      ['Pn. Rahimah binti Che Mat','Pensyarah','JMSK',4,4,2,63],
+    ],
+    profilSummary: [['Penyelidikan','7 projek'],['Pembentangan','9 kertas'],['Inovasi','5 produk'],['Anugerah','🥇×4 🥈×1'],['IP Didaftar','4 IP'],['Skor KPI','99 / 100']],
+  }
+};
+
+// ══════════════════════════════════════════════════════════
+//  CHART INSTANCES
+// ══════════════════════════════════════════════════════════
+const COLORS = ['#1d4ed8','#7c3aed','#16a34a','#ea580c','#d97706','#dc2626','#0891b2','#be185d'];
+let charts = {};
+let currentYear = 2024;
+
+Chart.defaults.font.family = '-apple-system, "Segoe UI", system-ui, sans-serif';
+Chart.defaults.font.size = 12;
+Chart.defaults.color = '#64748b';
+
+function makeChart(id, type, data, options) {
+  if (charts[id]) { charts[id].destroy(); }
+  const ctx = document.getElementById(id);
+  if (!ctx) return;
+  charts[id] = new Chart(ctx, { type, data, options: options || {} });
+}
+
+// ══════════════════════════════════════════════════════════
+//  RENDER ALL DATA FOR A YEAR
+// ══════════════════════════════════════════════════════════
+function renderYear(year) {
+  const d = DATA[year];
+
+  // Banners
+  ['overview','penyelidikan','pembentangan','inovasi','leaderboard','pensyarah'].forEach(t => {
+    const el = document.getElementById('banner-' + t);
+    if (el) el.textContent = '📅 Memaparkan data tahun ' + year;
+  });
+
+  // ── KPI OVERVIEW ──
+  document.getElementById('kpi-penyelidikan').textContent = d.kpi.penyelidikan;
+  document.getElementById('kpi-pembentangan').textContent = d.kpi.pembentangan;
+  document.getElementById('kpi-inovasi').textContent = d.kpi.inovasi;
+  document.getElementById('kpi-anugerah').textContent = d.kpi.anugerah;
+  document.getElementById('kpi-pensyarah').textContent = d.kpi.pensyarah;
+  ['penyelidikan','pembentangan','inovasi','anugerah','pensyarah'].forEach(k => {
+    const el = document.getElementById('kpi-' + k + '-trend');
+    el.textContent = d.kpiTrend[k];
+    el.className = 'trend ' + (d.kpiTrendUp[k] ? 'trend-up' : 'trend-down');
+  });
+
+  // ── MEDALS ──
+  document.getElementById('medal-emas').textContent = d.medalEmas;
+  document.getElementById('medal-perak').textContent = d.medalPerak;
+  document.getElementById('medal-gangsa').textContent = d.medalGangsa;
+
+  // ── KPI PENYELIDIKAN ──
+  document.getElementById('p-jumlah').textContent = d.pKPI.jumlah;
+  document.getElementById('p-selesai').textContent = d.pKPI.selesai;
+  document.getElementById('p-proses').textContent = d.pKPI.proses;
+  document.getElementById('p-rancang').textContent = d.pKPI.rancang;
+
+  // ── KPI PEMBENTANGAN ──
+  document.getElementById('b-jumlah').textContent = d.bKPI.jumlah;
+  document.getElementById('b-dalam').textContent = d.bKPI.dalam;
+  document.getElementById('b-luar').textContent = d.bKPI.luar;
+  document.getElementById('b-prosiding').textContent = d.bKPI.prosiding;
+
+  // ── KPI INOVASI ──
+  document.getElementById('i-jumlah').textContent = d.iKPI.penyelidikan + d.iKPI.pembentangan > 0 ? d.kpi.inovasi : d.kpi.inovasi;
+  document.getElementById('i-emas').textContent = d.medalEmas;
+  document.getElementById('i-perak').textContent = d.medalPerak;
+  document.getElementById('i-gangsa').textContent = d.medalGangsa;
+  document.getElementById('i-ip').textContent = d.iKPI.ip;
+
+  // ── CHARTS ──
+  // Trend chart (always shows all 3 years)
+  makeChart('trendChart','line',{
+    labels:['2024','2025','2026'],
+    datasets:[
+      {label:'Penyelidikan',data:[DATA[2024].kpi.penyelidikan,DATA[2025].kpi.penyelidikan,DATA[2026].kpi.penyelidikan],borderColor:'#1d4ed8',backgroundColor:'rgba(29,78,216,0.08)',tension:0.4,fill:true,pointRadius:5,pointBackgroundColor:'#1d4ed8'},
+      {label:'Pembentangan',data:[DATA[2024].kpi.pembentangan,DATA[2025].kpi.pembentangan,DATA[2026].kpi.pembentangan],borderColor:'#7c3aed',backgroundColor:'rgba(124,58,237,0.08)',tension:0.4,fill:true,pointRadius:5,pointBackgroundColor:'#7c3aed'},
+      {label:'Inovasi',data:[DATA[2024].kpi.inovasi,DATA[2025].kpi.inovasi,DATA[2026].kpi.inovasi],borderColor:'#16a34a',backgroundColor:'rgba(22,163,74,0.08)',tension:0.4,fill:true,pointRadius:5,pointBackgroundColor:'#16a34a'},
+    ]
+  },{responsive:true,plugins:{legend:{position:'top'}},scales:{y:{beginAtZero:true}}});
+
+  makeChart('jabatanChart','bar',{
+    labels:d.jabatan.labels,
+    datasets:[{label:'Penyelidikan',data:d.jabatan.data,backgroundColor:COLORS}]
+  },{responsive:true,plugins:{legend:{display:false}},scales:{y:{beginAtZero:true}}});
+
+  makeChart('statusChart','doughnut',{
+    labels:['Selesai','Dalam Proses','Perancangan'],
+    datasets:[{data:d.status,backgroundColor:['#16a34a','#ea580c','#1d4ed8']}]
+  },{responsive:true,plugins:{legend:{position:'bottom'}}});
+
+  makeChart('bentangChart','pie',{
+    labels:['Dalam Negara','Luar Negara'],
+    datasets:[{data:d.bentangDalamLuar,backgroundColor:['#1d4ed8','#7c3aed']}]
+  },{responsive:true,plugins:{legend:{position:'bottom'}}});
+
+  makeChart('medalChart','bar',{
+    labels:['Emas','Perak','Gangsa'],
+    datasets:[{data:[d.medalEmas,d.medalPerak,d.medalGangsa],backgroundColor:['#d97706','#94a3b8','#ea580c']}]
+  },{responsive:true,plugins:{legend:{display:false}},scales:{y:{beginAtZero:true}}});
+
+  makeChart('geranChart','doughnut',{
+    labels:['FRGS','PRGS','Geran Dalaman','Industri'],
+    datasets:[{data:d.geran,backgroundColor:['#1d4ed8','#7c3aed','#16a34a','#d97706']}]
+  },{responsive:true,plugins:{legend:{position:'right'}}});
+
+  makeChart('tahunPenyelidikanChart','bar',{
+    labels:d.jabatan.labels,
+    datasets:[{label:'Penyelidikan',data:d.jabatan.data,backgroundColor:'#1d4ed8'}]
+  },{responsive:true,plugins:{legend:{display:false}},scales:{y:{beginAtZero:true}}});
+
+  makeChart('bentangTahunChart','bar',{
+    labels:d.jabatan.labels,
+    datasets:[
+      {label:'Dalam Negara',data:d.bentangJabatan.JKE.map((_,i)=>[d.bentangJabatan.JKE[i],d.bentangJabatan.JKM[i],d.bentangJabatan.JKA[i],d.bentangJabatan.JMSK[i]][0]).slice(0,6).map((_,i)=>Object.values(d.bentangJabatan).map(a=>a[0])[i]).slice(0,6),backgroundColor:'#1d4ed8'},
+      {label:'Luar Negara',data:d.jabatan.labels.map((_,i)=>Math.floor(d.jabatan.data[i]*0.4)),backgroundColor:'#7c3aed'}
+    ]
+  },{responsive:true,plugins:{legend:{position:'top'}},scales:{y:{beginAtZero:true}}});
+
+  makeChart('platformChart','bar',{
+    labels:['NAPREC','CITREX','MTE','ITEX','ICTC','Lain-lain'],
+    datasets:[{label:'Bilangan',data:d.platform,backgroundColor:COLORS}]
+  },{responsive:true,plugins:{legend:{display:false}},scales:{y:{beginAtZero:true}},indexAxis:'y'});
+
+  makeChart('pameranChart','bar',{
+    labels:['CITREX','NAPREC','MTE','ITEX','Lain-lain'],
+    datasets:[
+      {label:'Emas',data:d.pameranMedal.emas,backgroundColor:'#d97706'},
+      {label:'Perak',data:d.pameranMedal.perak,backgroundColor:'#94a3b8'},
+      {label:'Gangsa',data:d.pameranMedal.gangsa,backgroundColor:'#ea580c'}
+    ]
+  },{responsive:true,plugins:{legend:{position:'top'}},scales:{y:{beginAtZero:true},x:{stacked:true}}});
+
+  makeChart('kategoriChart','pie',{
+    labels:['Produk','Proses','Perkhidmatan','Teknologi'],
+    datasets:[{data:d.kategori,backgroundColor:['#1d4ed8','#16a34a','#7c3aed','#d97706']}]
+  },{responsive:true,plugins:{legend:{position:'right'}}});
+
+  makeChart('kpiJabatanChart','radar',{
+    labels:['Penyelidikan','Pembentangan','Inovasi','Anugerah','IP'],
+    datasets:[
+      {label:'JKE',data:d.kpiRadar.JKE,borderColor:'#1d4ed8',backgroundColor:'rgba(29,78,216,0.1)'},
+      {label:'JKM',data:d.kpiRadar.JKM,borderColor:'#7c3aed',backgroundColor:'rgba(124,58,237,0.1)'},
+      {label:'JKA',data:d.kpiRadar.JKA,borderColor:'#16a34a',backgroundColor:'rgba(22,163,74,0.1)'},
+      {label:'JMSK',data:d.kpiRadar.JMSK,borderColor:'#d97706',backgroundColor:'rgba(217,119,6,0.1)'},
+    ]
+  },{responsive:true,plugins:{legend:{position:'bottom'}},scales:{r:{min:0,max:100}}});
+
+  makeChart('radarChart','radar',{
+    labels:['Penyelidikan','Pembentangan','Inovasi','Anugerah','IP','Penerbitan'],
+    datasets:[{label:'Dr. Ahmad Fadzil',data:d.radarProfil,borderColor:'#1d4ed8',backgroundColor:'rgba(29,78,216,0.15)',pointBackgroundColor:'#1d4ed8'}]
+  },{responsive:true,plugins:{legend:{display:false}},scales:{r:{min:0,max:100}}});
+
+  // ── TABLES ──
+  // Penyelidikan
+  const statBadge = {'Selesai':'bg-green','Dalam Proses':'bg-orange','Perancangan':'bg-red'};
+  const geranBadge = {'FRGS':'bg-blue','PRGS':'bg-purple','Dalaman':'bg-gold','Industri':'bg-green'};
+  document.getElementById('table-penyelidikan').innerHTML = d.tablePenyelidikan.map(r=>`
+    <tr><td>${r[0]}</td><td>${r[1]}</td><td>${r[2]}</td><td>${r[3]}</td>
+    <td><span class="bp ${geranBadge[r[4]]||'bg-blue'}">${r[4]}</span></td>
+    <td><span class="bp ${statBadge[r[5]]||'bg-blue'}">${r[5]}</span></td></tr>`).join('');
+
+  // Pembentangan
+  const peringkatBadge = {'Kebangsaan':'bg-blue','Antarabangsa':'bg-purple'};
+  document.getElementById('table-pembentangan').innerHTML = d.tablePembentangan.map(r=>`
+    <tr><td>${r[0]}</td><td>${r[1]}</td><td>${r[2]}</td><td>${r[3]}</td><td>${r[4]}</td>
+    <td><span class="bp ${peringkatBadge[r[5]]||'bg-blue'}">${r[5]}</span></td></tr>`).join('');
+
+  // Inovasi
+  const katBadge = {'Produk':'bg-blue','Proses':'bg-green','Perkhidmatan':'bg-purple','Teknologi':'bg-gold'};
+  const medalBadge = s => s.includes('Emas')?'bg-gold':s.includes('Perak')?'bg-blue':'bg-orange';
+  document.getElementById('table-inovasi').innerHTML = d.tableInovasi.map(r=>`
+    <tr><td>${r[0]}</td><td>${r[1]}</td><td>${r[2]}</td><td>${r[3]}</td>
+    <td><span class="bp ${katBadge[r[4]]||'bg-blue'}">${r[4]}</span></td>
+    <td>${r[5]}</td><td><span class="bp ${medalBadge(r[6])}">${r[6]}</span></td></tr>`).join('');
+
+  // Leaderboard
+  const rankClass = ['rank-1','rank-2','rank-3'];
+  document.getElementById('leaderboard-list').innerHTML = d.leaders.map((l,i)=>{
+    const rc = rankClass[i] || 'rank-n';
+    const pct = Math.round((l.score/100)*100);
+    return `<li class="leader-item">
+      <div class="rank ${rc}">${i+1}</div>
+      <div class="leader-info">
+        <div class="name">${l.name}</div>
+        <div class="dept">${l.dept}</div>
+        <div class="progress-bar"><div class="progress-fill" style="width:${pct}%"></div></div>
+      </div>
+      <div class="leader-score">${l.score}</div>
+    </li>`;
+  }).join('');
+
+  // Profil summary
+  document.getElementById('profil-summary').innerHTML = d.profilSummary.map(r=>`
+    <tr><td style="color:var(--muted);">${r[0]}</td><td style="font-weight:700;text-align:right;${r[0]==='Skor KPI'?'color:var(--accent);':''}">${r[1]}</td></tr>`).join('');
+
+  // Pensyarah table
+  const kpiColor = s => s >= 90 ? 'bg-green' : s >= 70 ? 'bg-blue' : 'bg-orange';
+  document.getElementById('table-pensyarah').innerHTML = d.tablePensyarah.map(r=>`
+    <tr><td>${r[0]}</td><td>${r[1]}</td><td>${r[2]}</td><td>${r[3]}</td><td>${r[4]}</td><td>${r[5]}</td>
+    <td><span class="bp ${kpiColor(r[6])}">${r[6]}</span></td></tr>`).join('');
+}
+
+// ══════════════════════════════════════════════════════════
+//  NAVIGATION
+// ══════════════════════════════════════════════════════════
+function showTab(tabId, btn) {
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('nav button').forEach(b => b.classList.remove('active'));
+  document.getElementById('tab-' + tabId).classList.add('active');
+  btn.classList.add('active');
+}
+
+function setYear(year, btn) {
+  currentYear = year;
+  document.querySelectorAll('.year-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  renderYear(year);
+}
+
+// ══════════════════════════════════════════════════════════
+//  PRINT FUNCTIONS
+// ══════════════════════════════════════════════════════════
+
+const JABATAN_FULL = {
+  'SEMUA': 'Semua Jabatan',
+  'JKE': 'Jabatan Kejuruteraan Elektrik (JKE)',
+  'JKM': 'Jabatan Kejuruteraan Mekanikal (JKM)',
+  'JKA': 'Jabatan Kejuruteraan Awam (JKA)',
+  'JMSK': 'Jabatan Matematik, Sains & Komputer (JMSK)',
+  'JKK': 'Jabatan Kejuruteraan Kimia (JKK)',
+  'JPA': 'Jabatan Perdagangan & Akaun (JPA)',
+};
+
+function buildPrintContent(year, dept) {
+  const d = DATA[year];
+  const deptLabel = JABATAN_FULL[dept] || dept;
+  const now = new Date().toLocaleDateString('ms-MY', { day:'2-digit', month:'long', year:'numeric' });
+
+  // Filter helpers
+  const filterByDept = (rows, deptCol) =>
+    dept === 'SEMUA' ? rows : rows.filter(r => r[deptCol] === dept);
+
+  const filteredPensyarah  = filterByDept(d.tablePensyarah, 2);   // col 2 = jabatan
+  const filteredPenyelidikan = filterByDept(d.tablePenyelidikan, 3); // col 3 = jabatan
+  const filteredPembentangan = filterByDept(d.tablePembentangan, 2); // col 2 = pembentang name — use pensyarah dept lookup
+  const filteredInovasi    = filterByDept(d.tableInovasi, 2);      // col 2 = jabatan
+
+  // Pembentangan: filter by matching pembentang to dept pensyarah
+  const deptPensyarahNames = dept === 'SEMUA'
+    ? null
+    : d.tablePensyarah.filter(p => p[2] === dept).map(p => p[0].split(' ').slice(0,3).join(' '));
+  const filteredBentang = dept === 'SEMUA'
+    ? d.tablePembentangan
+    : d.tablePembentangan.filter(r => deptPensyarahNames && deptPensyarahNames.some(n => r[2].includes(n.split(' ')[2])));
+
+  // Leaders filtered
+  const filteredLeaders = dept === 'SEMUA'
+    ? d.leaders
+    : d.leaders.filter(l => l.dept === dept);
+
+  // KPI counts from filtered
+  const kpiP = filteredPenyelidikan.length;
+  const kpiB = filteredBentang.length;
+  const kpiI = filteredInovasi.length;
+  const kpiPsy = filteredPensyarah.length;
+  const kpiEmas = filteredInovasi.filter(r => r[6].includes('Emas')).length;
+
+  const statBadge = {'Selesai':'bg-green','Dalam Proses':'bg-orange','Perancangan':'bg-red'};
+  const geranBadge = {'FRGS':'bg-blue','PRGS':'bg-purple','Dalaman':'bg-gold','Industri':'bg-green'};
+  const peringkatBadge = {'Kebangsaan':'bg-blue','Antarabangsa':'bg-purple'};
+  const katBadge = {'Produk':'bg-blue','Proses':'bg-green','Perkhidmatan':'bg-purple','Teknologi':'bg-gold'};
+  const medalBadge = s => s.includes('Emas')?'bg-gold':s.includes('Perak')?'bg-blue':'bg-orange';
+  const kpiColor = s => s >= 90 ? 'bg-green' : s >= 70 ? 'bg-blue' : 'bg-orange';
+
+  return `
+    <!-- PAGE 1: COVER + KPI + PENSYARAH -->
+    <div class="print-page">
+      <div class="print-header">
+        <h2>SPPPI — Laporan Prestasi Penyelidikan, Pembentangan &amp; Inovasi</h2>
+        <p>Politeknik Kota Bharu &nbsp;|&nbsp; Tahun: <strong>${year}</strong> &nbsp;|&nbsp; ${deptLabel} &nbsp;|&nbsp; Dicetak: ${now}</p>
+      </div>
+
+      <div class="print-section-title">📊 Ringkasan KPI Utama</div>
+      <div class="print-kpi-row">
+        <div class="print-kpi-box"><div class="pv">${kpiP}</div><div class="pl">Penyelidikan</div></div>
+        <div class="print-kpi-box"><div class="pv">${kpiB}</div><div class="pl">Pembentangan</div></div>
+        <div class="print-kpi-box"><div class="pv">${kpiI}</div><div class="pl">Inovasi</div></div>
+        <div class="print-kpi-box"><div class="pv">${kpiEmas}</div><div class="pl">Pingat Emas</div></div>
+        <div class="print-kpi-box"><div class="pv">${kpiPsy}</div><div class="pl">Pensyarah</div></div>
+      </div>
+
+      <div class="print-section-title">👨‍🏫 Senarai Pensyarah &amp; Skor KPI</div>
+      <table>
+        <thead><tr><th>Nama Pensyarah</th><th>Jawatan</th><th>Jabatan</th><th>Penyelidikan</th><th>Pembentangan</th><th>Inovasi</th><th>Skor KPI</th></tr></thead>
+        <tbody>
+          ${filteredPensyarah.map(r=>`<tr>
+            <td>${r[0]}</td><td>${r[1]}</td><td>${r[2]}</td>
+            <td style="text-align:center">${r[3]}</td>
+            <td style="text-align:center">${r[4]}</td>
+            <td style="text-align:center">${r[5]}</td>
+            <td><span class="bp ${kpiColor(r[6])}">${r[6]}</span></td>
+          </tr>`).join('')}
+        </tbody>
+      </table>
+
+      ${filteredLeaders.length > 0 ? `
+      <div class="print-section-title">🏆 Ranking Prestasi R&amp;I</div>
+      <table>
+        <thead><tr><th>Kedudukan</th><th>Nama Pensyarah</th><th>Jabatan</th><th>Skor KPI</th></tr></thead>
+        <tbody>
+          ${filteredLeaders.map((l,i)=>`<tr>
+            <td style="font-weight:700;text-align:center">${i+1}</td>
+            <td>${l.name}</td>
+            <td>${l.dept}</td>
+            <td><span class="bp ${kpiColor(l.score)}">${l.score}</span></td>
+          </tr>`).join('')}
+        </tbody>
+      </table>` : ''}
+
+      <div class="print-footer">Politeknik Kota Bharu · SPPPI Laporan Tahun ${year} · ${deptLabel} · Halaman 1</div>
+    </div>
+
+    <!-- PAGE 2: PENYELIDIKAN -->
+    ${filteredPenyelidikan.length > 0 ? `
+    <div class="print-page">
+      <div class="print-header">
+        <h2>🔬 Laporan Penyelidikan — ${year}</h2>
+        <p>${deptLabel} &nbsp;|&nbsp; Jumlah: ${filteredPenyelidikan.length} projek</p>
+      </div>
+      <div class="print-kpi-row">
+        <div class="print-kpi-box"><div class="pv">${filteredPenyelidikan.filter(r=>r[5]==='Selesai').length}</div><div class="pl">✅ Selesai</div></div>
+        <div class="print-kpi-box"><div class="pv">${filteredPenyelidikan.filter(r=>r[5]==='Dalam Proses').length}</div><div class="pl">🔄 Dalam Proses</div></div>
+        <div class="print-kpi-box"><div class="pv">${filteredPenyelidikan.filter(r=>r[5]==='Perancangan').length}</div><div class="pl">📝 Perancangan</div></div>
+        <div class="print-kpi-box"><div class="pv">${filteredPenyelidikan.filter(r=>r[4]==='FRGS').length}</div><div class="pl">FRGS</div></div>
+        <div class="print-kpi-box"><div class="pv">${filteredPenyelidikan.filter(r=>r[4]==='PRGS').length}</div><div class="pl">PRGS</div></div>
+      </div>
+      <table>
+        <thead><tr><th>#</th><th>Tajuk Penyelidikan</th><th>Penyelidik Utama</th><th>Jabatan</th><th>Jenis Geran</th><th>Status</th></tr></thead>
+        <tbody>
+          ${filteredPenyelidikan.map(r=>`<tr>
+            <td style="text-align:center">${r[0]}</td>
+            <td>${r[1]}</td><td>${r[2]}</td><td>${r[3]}</td>
+            <td><span class="bp ${geranBadge[r[4]]||'bg-blue'}">${r[4]}</span></td>
+            <td><span class="bp ${statBadge[r[5]]||'bg-blue'}">${r[5]}</span></td>
+          </tr>`).join('')}
+        </tbody>
+      </table>
+      <div class="print-footer">Politeknik Kota Bharu · SPPPI Laporan Tahun ${year} · ${deptLabel} · Halaman 2</div>
+    </div>` : ''}
+
+    <!-- PAGE 3: PEMBENTANGAN -->
+    ${filteredBentang.length > 0 ? `
+    <div class="print-page">
+      <div class="print-header">
+        <h2>🎤 Laporan Pembentangan — ${year}</h2>
+        <p>${deptLabel} &nbsp;|&nbsp; Jumlah: ${filteredBentang.length} kertas kerja</p>
+      </div>
+      <div class="print-kpi-row">
+        <div class="print-kpi-box"><div class="pv">${filteredBentang.filter(r=>r[5]==='Dalam Negara').length}</div><div class="pl">🇲🇾 Dalam Negara</div></div>
+        <div class="print-kpi-box"><div class="pv">${filteredBentang.filter(r=>r[5]==='Antarabangsa').length}</div><div class="pl">✈️ Antarabangsa</div></div>
+        <div class="print-kpi-box"><div class="pv">${filteredBentang.length}</div><div class="pl">📄 Jumlah Kertas</div></div>
+      </div>
+      <table>
+        <thead><tr><th>#</th><th>Tajuk Kertas Kerja</th><th>Pembentang</th><th>Persidangan</th><th>Lokasi</th><th>Peringkat</th></tr></thead>
+        <tbody>
+          ${filteredBentang.map(r=>`<tr>
+            <td style="text-align:center">${r[0]}</td>
+            <td>${r[1]}</td><td>${r[2]}</td><td>${r[3]}</td><td>${r[4]}</td>
+            <td><span class="bp ${peringkatBadge[r[5]]||'bg-blue'}">${r[5]}</span></td>
+          </tr>`).join('')}
+        </tbody>
+      </table>
+      <div class="print-footer">Politeknik Kota Bharu · SPPPI Laporan Tahun ${year} · ${deptLabel} · Halaman 3</div>
+    </div>` : ''}
+
+    <!-- PAGE 4: INOVASI -->
+    ${filteredInovasi.length > 0 ? `
+    <div class="print-page">
+      <div class="print-header">
+        <h2>💡 Laporan Inovasi — ${year}</h2>
+        <p>${deptLabel} &nbsp;|&nbsp; Jumlah: ${filteredInovasi.length} produk inovasi</p>
+      </div>
+      <div class="print-kpi-row">
+        <div class="print-kpi-box"><div class="pv">${filteredInovasi.filter(r=>r[6].includes('Emas')).length}</div><div class="pl">🥇 Emas</div></div>
+        <div class="print-kpi-box"><div class="pv">${filteredInovasi.filter(r=>r[6].includes('Perak')).length}</div><div class="pl">🥈 Perak</div></div>
+        <div class="print-kpi-box"><div class="pv">${filteredInovasi.filter(r=>r[6].includes('Gangsa')).length}</div><div class="pl">🥉 Gangsa</div></div>
+      </div>
+      <table>
+        <thead><tr><th>#</th><th>Nama Inovasi</th><th>Ketua Inovator</th><th>Jabatan</th><th>Kategori</th><th>Pameran</th><th>Anugerah</th></tr></thead>
+        <tbody>
+          ${filteredInovasi.map(r=>`<tr>
+            <td style="text-align:center">${r[0]}</td>
+            <td>${r[1]}</td><td>${r[2]}</td><td>${r[3]}</td>
+            <td><span class="bp ${katBadge[r[4]]||'bg-blue'}">${r[4]}</span></td>
+            <td>${r[5]}</td>
+            <td><span class="bp ${medalBadge(r[6])}">${r[6]}</span></td>
+          </tr>`).join('')}
+        </tbody>
+      </table>
+      <div class="print-footer">Politeknik Kota Bharu · SPPPI Laporan Tahun ${year} · ${deptLabel} · Halaman 4</div>
+    </div>` : ''}
+  `;
+}
+
+function previewPrint() {
+  const dept = document.getElementById('dept-select').value;
+  const content = buildPrintContent(currentYear, dept);
+  document.getElementById('print-area').innerHTML = content;
+  // scroll to print area
+  document.getElementById('print-area').scrollIntoView({ behavior: 'smooth' });
+  alert('✅ Pratonton laporan telah dijana di bawah dashboard.\nKlik "Cetak / PDF" untuk mencetak.');
+}
+
+function doPrint() {
+  const dept = document.getElementById('dept-select').value;
+  const content = buildPrintContent(currentYear, dept);
+  document.getElementById('print-area').innerHTML = content;
+  setTimeout(() => window.print(), 300);
+}
+
+// ── INIT ──
+renderYear(2024);
+</script>
+</body>
+</html>
